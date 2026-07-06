@@ -1,0 +1,3 @@
+name: ablation_no_imagination
+ablation:
+  imagination: false

@@ -1,0 +1,4 @@
+name: ablation_equal_budget
+ablation:
+  physics: false
+  imagination: false

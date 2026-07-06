@@ -1,0 +1,39 @@
+# Cohorts traversed by cairn. Five open benchmarking cohorts plus one
+# restricted clinical cohort. Each open entry was reachable at last check.
+# Access is gated by the respective data-use agreement of each registry.
+
+[primary-multiomics] TCGA-HNSC
+  portal     https://portal.gdc.cancer.gov/projects/TCGA-HNSC
+  api        https://api.gdc.cancer.gov/projects/TCGA-HNSC
+  scope      528 HNSCC cases; oral-cavity subset selected by ICD-O-3 C02.0-C06.9
+  modalities RNA-seq (20531 genes), HM450 methylation (485577 CpG),
+             miRNA (1881), somatic mutation, TNM stage, survival, vital status
+  license    NIH Genomic Data Commons data-use policy
+
+[clinical-trajectory] SEER
+  portal     https://seer.cancer.gov/
+  scope      oral-cavity / oropharynx squamous carcinoma, 2010-2017 registries
+  use        clinical-feature trajectory validation (no molecular profiling)
+  license    SEER research-data use agreement (signed request)
+
+[validation-longitudinal] GSE26549
+  portal     https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE26549
+  scope      86 oral premalignant-lesion patients, prospective follow-up;
+             35 progress to OSCC
+  license    NCBI GEO open access
+
+[validation-expression] GSE30784
+  portal     https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE30784
+  scope      229 samples (167 OSCC, 17 dysplasia, 45 normal); U133 Plus 2.0
+  license    NCBI GEO open access
+
+[validation-proteomics] CPTAC-HNSCC
+  portal     https://pdc.cancer.gov/study-summary/S054
+  mirror     https://proteomic.datacommons.cancer.gov/pdc/study-summary/PDC000221
+  scope      oral-cavity subset (C02.0-C06.9) for cross-platform proteomics
+  license    NCI Proteomic Data Commons open access
+
+[restricted] private-multicenter-oral
+  access     RESTRICTED; anonymized records held under per-institution sharing
+             policy; not publicly redistributable
+  scope      retrospective development arm + prospective silent-mode arm

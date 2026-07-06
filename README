@@ -1,0 +1,144 @@
+cairn
+=====
+
+A physics-constrained latent world model that turns cross-sectional multi-omics
+profiles of oral potentially malignant disorders into personalized risk
+trajectories, then learns a surveillance-interval policy on trajectories
+imagined by that world model. The latent transition is a Gompertz-logistic
+tumour-growth ODE with immune coupling, wrapped in a neural residual and solved
+with an adaptive Dormand-Prince integrator.
+
+The package name follows the route markers piled along a climb: each cairn
+fixes one point on a path that is otherwise invisible between observations.
+
+
+What lives where
+----------------
+  src/cairn/
+    kit/          configuration schema, seeding + RNG snapshots, atomic ckpts
+    field/        modality preprocessing, planted-signal cohorts, batching
+    cordage/      modality VAEs (Eq. 1) and cross-modal attention (Eq. 2)
+    headwall/     growth ODE (Eq. 3-4), neural field (Eq. 5), bounds (Eq. 6)
+    expedition/   world model, imagination rollout (Eq. 7), policy + reward (Eq. 8)
+    provisions/   composite objective (Eq. 9) and survival supervision
+    altimeter/    concordance, AUC/Brier, off-policy value, DeLong/bootstrap
+    ascent/       optimizer, epoch engine, two-phase schedule
+    descent/      evaluation tables and policy off-policy report
+    routes/       train / evaluate / forecast / export command lines
+  beta/           route descriptions (one YAML per reported configuration)
+  scripts/        torchrun and data-staging helpers
+  tests/          numerical, property, shape, overfit, integration, ONNX parity
+
+
+Install
+-------
+The pinned stack is intentionally narrow (CUDA 11.7, PyTorch 1.13.1, Python 3.8).
+
+  conda env create -f environment.yml && conda activate cairn
+  pip install -e .
+
+or, with an existing CUDA 11.7 toolchain:
+
+  pip install -r requirements.txt && pip install -e .
+
+Container build:
+
+  docker build -t cairn:0.4.1 .
+
+
+Cohorts
+-------
+No patient data ships with this repository. Open-layer cohorts (TCGA-HNSC,
+SEER, GSE26549, GSE30784, CPTAC-HNSCC) and the restricted private cohort are
+catalogued, with portals and license terms, in terrain-sources.txt. Stage them
+under a directory of your choice:
+
+  bash scripts/prepare_data.sh data
+
+The cohort builder used for tests and dry runs synthesizes a planted-signal
+population (an intrinsic latent growth rate drives both the omics signal and the
+time-to-transformation) so every module has a recoverable target without
+touching protected data.
+
+
+Routes
+------
+Every reported configuration is a route file under beta/. Arguments are
+positional: route, then device, then a working directory.
+
+  python -m cairn.routes.train beta/standard.yaml auto runs/standard
+  python -m cairn.routes.evaluate beta/standard.yaml runs/standard/final.ckpt auto
+  python -m cairn.routes.forecast beta/standard.yaml runs/standard/final.ckpt auto 0
+  python -m cairn.routes.export beta/standard.yaml runs/standard/final.ckpt out.onnx cpu
+
+Component ablations (Table 2) and the modality-stage and external-transfer
+supplementary studies are sibling route files:
+
+  beta/ablation_no_physics.yaml          remove Eq. 3-6 (data-driven dynamics)
+  beta/ablation_no_imagination.yaml      train the policy without rollouts
+  beta/ablation_no_fusion.yaml           single gene-expression encoder
+  beta/ablation_no_drl.yaml              drop the monitoring policy
+  beta/ablation_no_immune.yaml           pure Gompertz growth (rho = 0)
+  beta/ablation_no_attention.yaml        concatenation instead of attention
+  beta/ablation_equal_budget.yaml        no physics, no imagination
+  beta/supplementary_*_only.yaml         one modality at a time (Table 3)
+  beta/supplementary_external_transfer.yaml / _longitudinal.yaml
+
+The multi-node launcher mirrors the reported hardware:
+
+  bash scripts/launch_train.sh beta/standard.yaml runs/standard
+
+
+Compute budget
+--------------
+The standard route reproduces the reported training regime and is heavy by
+design; do not soften these numbers when reporting.
+
+  hardware            8x NVIDIA A100 80GB
+  per-device batch    256
+  gradient accum      24
+  effective batch     49152
+  precision           fp32
+  optimizer           AdamW, betas (0.9, 0.999), weight decay 1e-4
+  learning rate       2e-7, cosine annealing warm restarts (period 50)
+  schedule            4000 world-model epochs, then 1500 policy epochs
+  ODE solver          dopri5, rtol = atol = 1e-5
+  seeds               42, 1024, 2023 (report mean +/- std)
+
+A single full run does not fit on one accelerator; the synthetic dry run on
+beta/_smoke.yaml is the only configuration intended for a laptop and exists
+purely for the test suite.
+
+
+Reading the latent state
+------------------------
+The first two latent coordinates carry the ODE state (tumour volume V, immune
+mass I); the bound term of Eq. 6 keeps V in [0, V_max] and I non-negative. The
+risk read-out maps the latent to a cumulative transformation probability, and
+the policy chooses a monitoring interval from {30, 60, 90, 180, 365} days under
+two hard rules: never exceed a 365-day gap, and override to 30 days once risk
+crosses 0.7.
+
+
+Implementation notes
+--------------------
+The risk read-out is supervised with a Cox partial likelihood on the
+ODE-derived score. The manuscript reports concordance as the model's primary
+output but lists only reconstruction, physics, RL and KL terms in Eq. 9; the
+read-out therefore needs an explicit outcome signal, which is added as a fifth
+term in provisions/objective.py (cox_partial_likelihood) and is the only
+departure from a literal reading of Eq. 9.
+The ONNX graph exports a deterministic risk pathway: the adaptive solver is
+replaced by one explicit RK4 step so the graph holds only tensor operations.
+
+
+Tests
+-----
+  pytest -q
+  ruff check src tests
+  mypy --strict src/cairn
+
+The suite covers ODE reductions and gradients, field rollout shapes, constraint
+bounds, encoder fusion and missing-modality fallback, the composite objective,
+single-batch overfitting, route parsing, a two-phase training smoke run, and
+ONNX parity against the eager model.

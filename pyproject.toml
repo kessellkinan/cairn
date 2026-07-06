@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cairn"
+version = "0.4.1"
+description = "Physics-constrained latent world model for personalized oral-cancer risk trajectories and surveillance scheduling"
+requires-python = ">=3.8,<3.9"
+license = { text = "MIT" }
+authors = [{ name = "Oral Risk Trajectory Group" }]
+dependencies = [
+    "torch==1.13.1",
+    "torchdiffeq==0.2.3",
+    "numpy==1.23.5",
+    "omegaconf==2.2.3",
+    "plac==1.3.5",
+]
+
+[project.optional-dependencies]
+export = ["onnx==1.12.0", "onnxruntime==1.13.1"]
+dev = [
+    "mypy==1.4.1",
+    "ruff==0.0.290",
+    "black==23.3.0",
+    "isort==5.12.0",
+    "pytest==7.4.0",
+    "pre-commit==2.21.0",
+]
+
+[project.scripts]
+cairn-train = "cairn.routes.train:main"
+cairn-evaluate = "cairn.routes.evaluate:main"
+cairn-forecast = "cairn.routes.forecast:main"
+cairn-export = "cairn.routes.export:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 92
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+line_length = 92
+known_first_party = ["cairn"]
+
+[tool.ruff]
+line-length = 92
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM"]
+ignore = ["B905", "UP006", "UP007", "UP035", "UP037", "UP045"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = false
+disable_error_code = ["no-any-return", "no-untyped-call", "type-arg"]
+
+[[tool.mypy.overrides]]
+module = ["torchdiffeq.*", "plac.*", "onnx.*", "onnxruntime.*"]
+ignore_missing_imports = true

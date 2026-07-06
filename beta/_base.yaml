@@ -1,0 +1,90 @@
+name: standard
+seed: 42
+
+data:
+  modalities:
+    - {name: transcriptomics, input_dim: 20531, keep: 2000, transform: log2_topvar}
+    - {name: methylation, input_dim: 485577, keep: 5000, transform: differential}
+    - {name: proteomics, input_dim: 4000, keep: 1000, transform: log2_topabund}
+    - {name: mirna, input_dim: 1881, keep: 500, transform: quantile_top}
+  latent_dim: 256
+  cohort_size: 382
+  max_observations: 4
+  horizon_days: 1825.0
+  event_horizon_days: 730.0
+  censor_fraction: 0.3
+  active_modalities: [transcriptomics, methylation, proteomics, mirna]
+
+model:
+  latent_dim: 256
+  heads: 4
+  encoder_hidden: 64
+  reward_hidden: 64
+  decay_init: 0.5
+  growth:
+    alpha: 0.1
+    carrying_capacity: 10.0
+    kill_rate: 0.2
+    saturation: 0.1
+    basal_influx: 0.05
+    stimulation: 0.3
+    half_max: 1.0
+    immune_death: 0.1
+    rho_immune: 0.05
+    eta_immune: 0.1
+  dynamics:
+    physics_dims: 2
+    residual_hidden: 128
+    residual_layers: 2
+    bound_weight: 10.0
+    rtol: 1.0e-5
+    atol: 1.0e-5
+    solver: dopri5
+    volume_max: 10.0
+    immune_max: 10.0
+
+rl:
+  actions: [30, 60, 90, 180, 365]
+  gamma: 0.99
+  lambda_detection: 5.0
+  lambda_cost: 1.0
+  lambda_missed: 10.0
+  risk_threshold: 0.7
+  monitor_floor_days: 365
+  override_days: 30
+  policy_hidden: [256, 128]
+  rollout_steps: 10
+  step_days: 90.0
+
+optim:
+  lr: 2.0e-7
+  weight_decay: 1.0e-4
+  beta1: 0.9
+  beta2: 0.999
+  grad_clip: 1.0
+  restart_period: 50
+  restart_min_lr: 1.0e-9
+
+schedule:
+  world_epochs: 4000
+  policy_epochs: 1500
+  batch_size: 256
+  grad_accum: 24
+  world_size: 8
+  patience: 200
+  precision: fp32
+
+loss_weights:
+  physics: 1.0
+  rl: 0.1
+  kl: 0.5
+
+ablation:
+  physics: true
+  imagination: true
+  fusion: true
+  drl: true
+  immune_coupling: true
+  cross_modal_attention: true
+
+extras: {}

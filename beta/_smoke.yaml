@@ -1,0 +1,50 @@
+name: smoke
+seed: 0
+
+data:
+  modalities:
+    - {name: transcriptomics, input_dim: 32, keep: 8, transform: log2_topvar}
+    - {name: methylation, input_dim: 32, keep: 8, transform: differential}
+    - {name: proteomics, input_dim: 32, keep: 8, transform: log2_topabund}
+    - {name: mirna, input_dim: 32, keep: 8, transform: quantile_top}
+  latent_dim: 16
+  cohort_size: 16
+  max_observations: 2
+  horizon_days: 1825.0
+  event_horizon_days: 730.0
+  censor_fraction: 0.3
+  active_modalities: [transcriptomics, methylation, proteomics, mirna]
+
+model:
+  latent_dim: 16
+  heads: 2
+  encoder_hidden: 8
+  reward_hidden: 8
+  decay_init: 0.5
+  dynamics:
+    physics_dims: 2
+    residual_hidden: 8
+    residual_layers: 2
+    bound_weight: 10.0
+    rtol: 1.0e-4
+    atol: 1.0e-4
+    solver: dopri5
+    volume_max: 10.0
+    immune_max: 10.0
+
+rl:
+  rollout_steps: 2
+  step_days: 90.0
+
+optim:
+  lr: 1.0e-3
+  restart_period: 2
+
+schedule:
+  world_epochs: 1
+  policy_epochs: 1
+  batch_size: 4
+  grad_accum: 1
+  world_size: 1
+  patience: 1
+  precision: fp32

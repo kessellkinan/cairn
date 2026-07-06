@@ -1,0 +1,5 @@
+name: supplementary_longitudinal
+data:
+  cohort_size: 86
+  max_observations: 6
+  censor_fraction: 0.6

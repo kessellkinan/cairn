@@ -1,0 +1,3 @@
+name: ablation_no_immune_coupling
+ablation:
+  immune_coupling: false

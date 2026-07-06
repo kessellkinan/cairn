@@ -1,0 +1,5 @@
+name: supplementary_external_transfer
+data:
+  cohort_size: 229
+  max_observations: 1
+  censor_fraction: 0.4
